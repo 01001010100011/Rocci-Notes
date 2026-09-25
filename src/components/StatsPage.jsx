@@ -7,6 +7,17 @@ const TABS = [
   { key: 'downloads', label: 'Top Download', field: 'downloadsCount', unit: 'appunti scaricati' },
 ]
 
+// In classifica servono solo nickname e contatori: l'email non viene mai letta.
+function pickRankEntry(item) {
+  const data = item.data()
+  return {
+    id: item.id,
+    username: data.username,
+    uploadsCount: data.uploadsCount,
+    downloadsCount: data.downloadsCount,
+  }
+}
+
 export default function StatsPage() {
   const [tab, setTab] = useState('contributors')
   const [contributors, setContributors] = useState([])
@@ -16,7 +27,7 @@ export default function StatsPage() {
     () =>
       onSnapshot(
         query(collection(db, 'users'), orderBy('uploadsCount', 'desc'), limit(10)),
-        (snapshot) => setContributors(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))),
+        (snapshot) => setContributors(snapshot.docs.map(pickRankEntry)),
         () => {},
       ),
     [],
@@ -26,7 +37,7 @@ export default function StatsPage() {
     () =>
       onSnapshot(
         query(collection(db, 'users'), orderBy('downloadsCount', 'desc'), limit(10)),
-        (snapshot) => setDownloaders(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))),
+        (snapshot) => setDownloaders(snapshot.docs.map(pickRankEntry)),
         () => {},
       ),
     [],
