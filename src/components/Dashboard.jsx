@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   collection,
@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
-import { INSUFFICIENT_CREDITS_MESSAGE, SUBJECTS } from '../constants'
+import { INSUFFICIENT_CREDITS_MESSAGE, PROFESSORI, SUBJECTS } from '../constants'
 
 export default function Dashboard() {
   const { user, profile } = useAuth()
@@ -22,7 +22,9 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [notes, setNotes] = useState([])
   const [downloadedIds, setDownloadedIds] = useState(() => new Set())
-  const [subject, setSubject] = useState('tutte')
+  const [search, setSearch] = useState('')
+  const [subject, setSubject] = useState('')
+  const [professor, setProfessor] = useState('')
   const [notice, setNotice] = useState(location.state?.notice || '')
 
   useEffect(() => {
@@ -60,14 +62,24 @@ export default function Dashboard() {
     return unsubscribe
   }, [user.uid])
 
-  const subjects = useMemo(() => {
-    const fromNotes = new Set(notes.map((note) => note.subject).filter(Boolean))
-    return ['tutte', ...SUBJECTS.filter((item) => fromNotes.has(item)), ...[...fromNotes].filter((item) => !SUBJECTS.includes(item))]
-  }, [notes])
+  const trimmedSearch = search.trim().toLowerCase()
+  const visibleNotes = notes.filter((note) => {
+    if (subject && note.subject !== subject) return false
+    if (professor && note.professor !== professor) return false
+    if (trimmedSearch) {
+      const haystack =
+        `${note.title || ''} ${note.description || ''} ${note.subject || ''} ${note.professor || ''}`.toLowerCase()
+      if (!haystack.includes(trimmedSearch)) return false
+    }
+    return true
+  })
+  const filtersActive = Boolean(subject || professor || trimmedSearch)
 
-  const visibleNotes = notes.filter(
-    (note) => subject === 'tutte' || note.subject === subject,
-  )
+  function resetFilters() {
+    setSearch('')
+    setSubject('')
+    setProfessor('')
+  }
 
   return (
     <div className="mx-auto mt-8 max-w-6xl">
@@ -77,25 +89,76 @@ export default function Dashboard() {
         </p>
       )}
 
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:px-0">
-        {subjects.map((item) => (
+      <div className="rounded-[24px] border border-ink/10 bg-paper/70 p-4 shadow-soft sm:p-5">
+        <div className="grid gap-3 lg:grid-cols-4">
+          <label className="lg:col-span-2">
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/55">
+              Cerca
+            </span>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Titolo, descrizione o argomento…"
+              className="w-full rounded-2xl border border-ink/10 bg-white/60 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-copper/40"
+            />
+          </label>
+          <label>
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/55">
+              Materia
+            </span>
+            <select
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="w-full appearance-none rounded-2xl border border-ink/10 bg-white/60 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-copper/40"
+            >
+              <option value="">Tutte le materie</option>
+              {SUBJECTS.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/55">
+              Professore
+            </span>
+            <select
+              value={professor}
+              onChange={(e) => setProfessor(e.target.value)}
+              className="w-full appearance-none rounded-2xl border border-ink/10 bg-white/60 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-copper/40"
+            >
+              <option value="">Tutti i professori</option>
+              {PROFESSORI.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <p className="text-xs text-ink/50">
+            {visibleNotes.length} {visibleNotes.length === 1 ? 'appunto trovato' : 'appunti trovati'}
+          </p>
           <button
-            key={item}
             type="button"
-            onClick={() => setSubject(item)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${
-              subject === item
-                ? 'bg-ink text-paper'
-                : 'border border-ink/10 bg-paper/70 text-ink/70'
-            }`}
+            onClick={resetFilters}
+            disabled={!filtersActive}
+            className="rounded-full border border-ink/15 px-4 py-1.5 text-xs font-semibold text-ink/70 transition hover:border-ink/40 disabled:opacity-40"
           >
-            {item}
+            Azzera filtri
           </button>
-        ))}
+        </div>
       </div>
 
       {visibleNotes.length === 0 ? (
-        <EmptyState />
+        notes.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <NoMatchState onReset={resetFilters} />
+        )
       ) : (
         <ul className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visibleNotes.map((note) => (
@@ -127,6 +190,24 @@ function EmptyState() {
       >
         Carica i tuoi appunti
       </Link>
+    </div>
+  )
+}
+
+function NoMatchState({ onReset }) {
+  return (
+    <div className="mt-10 rounded-[28px] border border-dashed border-ink/20 bg-paper/50 px-6 py-16 text-center">
+      <p className="font-display text-3xl text-ink">Nessun appunto trovato</p>
+      <p className="mx-auto mt-3 max-w-md text-ink/65">
+        Prova a cambiare ricerca, materia o professore.
+      </p>
+      <button
+        type="button"
+        onClick={onReset}
+        className="mt-6 inline-flex rounded-full bg-ink px-5 py-3 text-sm font-semibold text-paper"
+      >
+        Azzera filtri
+      </button>
     </div>
   )
 }
@@ -163,7 +244,7 @@ function NoteCard({ note, isOwner, alreadyDownloaded, credits, userId }) {
             throw new Error(INSUFFICIENT_CREDITS_MESSAGE)
           }
 
-          transaction.update(userRef, { credits: increment(-1) })
+          transaction.update(userRef, { credits: increment(-1), downloadsCount: increment(1) })
           transaction.update(noteRef, { downloadsCount: increment(1) })
           transaction.set(downloadRef, {
             noteId: note.id,

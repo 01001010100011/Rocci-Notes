@@ -4,10 +4,12 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import UserBadge from './UserBadge'
+import Footer from './Footer'
 
 const MOBILE_NAV = [
   { to: '/', label: 'Bacheca', Icon: HomeIcon },
   { to: '/upload', label: 'Carica', Icon: PlusIcon },
+  { to: '/stats', label: 'Classifica', Icon: TrophyIcon },
   { to: '/profile', label: 'Profilo', Icon: UserIcon },
 ]
 
@@ -31,6 +33,7 @@ export default function AppShell() {
   const { isAdmin } = useAuth()
   const pendingCount = usePendingCount(isAdmin)
   const onUpload = pathname === '/upload'
+  const onStats = pathname === '/stats'
 
   return (
     <div className="min-h-dvh px-4 pb-28 pt-4 sm:px-6 sm:pb-10 sm:pt-6 lg:px-10">
@@ -56,6 +59,14 @@ export default function AppShell() {
             </Link>
           )}
           <Link
+            to="/stats"
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              onStats ? 'bg-ink text-paper' : 'border border-ink/10 text-ink hover:border-ink/30'
+            }`}
+          >
+            Classifica
+          </Link>
+          <Link
             to="/upload"
             className={`rounded-full px-4 py-2 text-sm font-semibold ${
               onUpload ? 'bg-ink text-paper' : 'border border-ink/10 text-ink hover:border-ink/30'
@@ -65,11 +76,27 @@ export default function AppShell() {
           </Link>
           <UserBadge />
         </div>
-        <div className="sm:hidden">
+        <div className="flex items-center justify-end gap-2 sm:hidden">
+          {isAdmin && (
+            <Link
+              to="/admin"
+              aria-label="Pannello Admin"
+              title="Pannello Admin"
+              className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-forest text-paper shadow-soft transition hover:opacity-90"
+            >
+              <ShieldIcon />
+              {pendingCount > 0 && (
+                <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-copper px-1 text-[10px] font-bold text-paper ring-2 ring-paper">
+                  {pendingCount}
+                </span>
+              )}
+            </Link>
+          )}
           <UserBadge compact />
         </div>
       </header>
       <Outlet />
+      <Footer />
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-paper/95 backdrop-blur sm:hidden">
         <ul className="mx-auto flex max-w-md items-stretch justify-around">
@@ -125,6 +152,46 @@ function UserIcon() {
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function TrophyIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M6 3h8v4a4 4 0 0 1-8 0V3Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 4H4v1.5A2.5 2.5 0 0 0 6.5 8M14 4h2v1.5A2.5 2.5 0 0 1 13.5 8M10 11v3M7 17h6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function ShieldIcon() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M10 2.5 4 5v5c0 3.4 2.5 6.2 6 7.5 3.5-1.3 6-4.1 6-7.5V5l-6-2.5Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m7.4 10 1.9 1.9 3.4-3.6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   )

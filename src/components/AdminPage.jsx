@@ -108,7 +108,10 @@ export default function AdminPage() {
       }
       batch.update(doc(db, 'notes', note.id), patch)
       if (nextStatus === 'approved' && note.status !== 'approved') {
-        batch.update(doc(db, 'users', note.authorId), { credits: increment(1) })
+        batch.update(doc(db, 'users', note.authorId), {
+          credits: increment(1),
+          uploadsCount: increment(1),
+        })
       }
       await batch.commit()
 

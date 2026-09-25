@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard'
 import UploadPage from './components/UploadPage'
 import ProfilePage from './components/ProfilePage'
 import AdminPage from './components/AdminPage'
+import StatsPage from './components/StatsPage'
 
 function AdminRoute() {
   const { profile } = useAuth()
@@ -35,6 +36,7 @@ function Gate() {
       <Route element={<AppShell />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/upload" element={<UploadPage />} />
+        <Route path="/stats" element={<StatsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/admin" element={<AdminRoute />} />
       </Route>

@@ -33,19 +33,24 @@ export async function ensureUserDocument(user, extras = {}) {
         email: user.email ?? '',
         username,
         credits: 3,
+        uploadsCount: 0,
+        downloadsCount: 0,
         role,
         createdAt: serverTimestamp(),
       })
       return
     }
 
+    const data = snapshot.data()
     const patch = {}
-    if (extras.username && snapshot.data().username !== extras.username) {
+    if (extras.username && data.username !== extras.username) {
       patch.username = extras.username
     }
-    if (role === 'admin' && snapshot.data().role !== 'admin') {
+    if (role === 'admin' && data.role !== 'admin') {
       patch.role = 'admin'
     }
+    if (typeof data.uploadsCount !== 'number') patch.uploadsCount = 0
+    if (typeof data.downloadsCount !== 'number') patch.downloadsCount = 0
     if (Object.keys(patch).length > 0) {
       transaction.update(userRef, patch)
     }

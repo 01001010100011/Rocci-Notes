@@ -17,44 +17,78 @@ service cloud.firestore {
         ];
     }
 
-    // Profili utente: ogni studente legge e modifica solo il proprio documento.
-    match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+    // Contatori classifica: letti con default 0 così funzionano anche sui
+    // documenti creati prima dell'introduzione di uploadsCount/downloadsCount.
+    function beforeUploads() {
+      return 'uploadsCount' in resource.data ? resource.data.uploadsCount : 0;
+    }
 
-      // Primo accesso: 3 crediti iniziali; il ruolo 'admin' spetta solo all'email
-      // dell'amministratore, così nessuno può auto-assegnarselo.
+    function beforeDownloads() {
+      return 'downloadsCount' in resource.data ? resource.data.downloadsCount : 0;
+    }
+
+    function afterUploads() {
+      return 'uploadsCount' in request.resource.data ? request.resource.data.uploadsCount : 0;
+    }
+
+    function afterDownloads() {
+      return 'downloadsCount' in request.resource.data ? request.resource.data.downloadsCount : 0;
+    }
+
+    // Profili utente: leggibili da tutti gli utenti autenticati (serve alla
+    // classifica /stats); in scrittura ognuno tocca solo il proprio documento.
+    match /users/{userId} {
+      allow read: if request.auth != null;
+
+      // Primo accesso: 3 crediti iniziali e contatori classifica a zero; il ruolo
+      // 'admin' spetta solo alle email amministratore, così nessuno può auto-assegnarselo.
       allow create: if request.auth != null
         && request.auth.uid == userId
         && request.resource.data.uid == userId
         && request.resource.data.credits == 3
+        && request.resource.data.uploadsCount == 0
+        && request.resource.data.downloadsCount == 0
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.role == (isAdminEmail() ? 'admin' : 'student')
-        && request.resource.data.keys().hasAll(['uid', 'email', 'username', 'credits', 'role', 'createdAt']);
+        && request.resource.data.keys().hasAll([
+          'uid', 'email', 'username', 'credits', 'role',
+          'uploadsCount', 'downloadsCount', 'createdAt'
+        ]);
 
       allow update: if request.auth != null
         && (
-          // Proprietario: crediti ±1 (download/upload approvati), username, email.
+          // Proprietario: crediti ±1, username, email, downloadsCount +1 quando
+          // scarica; uploadsCount può solo essere inizializzato a 0 (backfill),
+          // mai incrementato da sé.
           (
             request.auth.uid == userId
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['credits', 'username', 'email'])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'credits', 'username', 'email', 'downloadsCount', 'uploadsCount'
+            ])
             && (
               request.resource.data.credits == resource.data.credits
               || request.resource.data.credits == resource.data.credits + 1
               || request.resource.data.credits == resource.data.credits - 1
             )
+            && (
+              afterDownloads() == beforeDownloads()
+              || afterDownloads() == beforeDownloads() + 1
+            )
+            && afterUploads() == beforeUploads()
           )
-          // Upgrade del ruolo al login per l'email amministratore.
+          // Upgrade del ruolo al login per le email amministratore.
           || (
             request.auth.uid == userId
             && isAdminEmail()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
             && request.resource.data.role == 'admin'
           )
-          // Admin che accredita +1 all'autore di un appunto approvato.
+          // Admin che accredita +1 credito e +1 uploadsCount all'autore approvato.
           || (
             isAdmin()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['credits'])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['credits', 'uploadsCount'])
             && request.resource.data.credits == resource.data.credits + 1
+            && afterUploads() == beforeUploads() + 1
           )
         );
 
