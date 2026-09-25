@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Fraunces', ui-serif, Georgia, serif;
+  --color-ink: #1a1612;
+  --color-paper: #f3ead8;
+  --color-paper-2: #e4d6bc;
+  --color-copper: #b4532a;
+  --color-forest: #2d4a3e;
+  --shadow-soft: 0 10px 30px -18px rgb(26 22 18 / 0.35);
+  --shadow-lift: 0 22px 50px -24px rgb(26 22 18 / 0.45);
+}
+
+@layer base {
+  html {
+    @apply bg-paper text-ink antialiased;
+  }
+
+  body {
+    @apply m-0 min-h-dvh font-sans;
+    background-image:
+      linear-gradient(rgb(26 22 18 / 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(26 22 18 / 0.035) 1px, transparent 1px),
+      radial-gradient(circle at top left, rgb(180 83 42 / 0.12), transparent 36%),
+      radial-gradient(circle at 90% 10%, rgb(45 74 62 / 0.1), transparent 32%);
+    background-size:
+      28px 28px,
+      28px 28px,
+      100% 100%,
+      100% 100%;
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .stamp {
+    border: 1.5px solid currentColor;
+    border-radius: 4px;
+    letter-spacing: 0.12em;
+  }
+}

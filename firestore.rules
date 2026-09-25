@@ -1,0 +1,128 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isAdminEmail() {
+      return request.auth != null && request.auth.token.email == 'leoriellooo@gmail.com';
+    }
+
+    // Profili utente: ogni studente legge e modifica solo il proprio documento.
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Primo accesso: 3 crediti iniziali; il ruolo 'admin' spetta solo all'email
+      // dell'amministratore, così nessuno può auto-assegnarselo.
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.uid == userId
+        && request.resource.data.credits == 3
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == (isAdminEmail() ? 'admin' : 'student')
+        && request.resource.data.keys().hasAll(['uid', 'email', 'username', 'credits', 'role', 'createdAt']);
+
+      allow update: if request.auth != null
+        && (
+          // Proprietario: crediti ±1 (download/upload approvati), username, email.
+          (
+            request.auth.uid == userId
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['credits', 'username', 'email'])
+            && (
+              request.resource.data.credits == resource.data.credits
+              || request.resource.data.credits == resource.data.credits + 1
+              || request.resource.data.credits == resource.data.credits - 1
+            )
+          )
+          // Upgrade del ruolo al login per l'email amministratore.
+          || (
+            request.auth.uid == userId
+            && isAdminEmail()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
+            && request.resource.data.role == 'admin'
+          )
+          // Admin che accredita +1 all'autore di un appunto approvato.
+          || (
+            isAdmin()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['credits'])
+            && request.resource.data.credits == resource.data.credits + 1
+          )
+        );
+
+      allow delete: if false;
+
+      // Storico acquisti: l'utente legge e crea solo i propri record di download.
+      match /downloads/{downloadId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+
+        allow create: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.noteId == downloadId
+          && request.resource.data.keys().hasAll(['noteId', 'title', 'subject', 'fileUrl', 'downloadedAt']);
+
+        allow update, delete: if false;
+      }
+    }
+
+    // Catalogo appunti: leggibile da tutti gli utenti autenticati.
+    match /notes/{noteId} {
+      allow read: if request.auth != null;
+
+      // Le note nascono sempre in stato 'pending'.
+      allow create: if request.auth != null
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.downloadsCount == 0
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 140
+        && request.resource.data.subject is string
+        && request.resource.data.fileUrl is string
+        && request.resource.data.fileUrl.matches('https://res\\.cloudinary\\.com/.*')
+        && request.resource.data.keys().hasAll([
+          'title', 'subject', 'description', 'fileUrl',
+          'authorId', 'authorName', 'createdAt', 'downloadsCount', 'status'
+        ]);
+
+      allow update: if request.auth != null
+        && (
+          // +1 al contatore download di chi scarica.
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloadsCount'])
+            && request.resource.data.downloadsCount == resource.data.downloadsCount + 1
+          )
+          // Rinomina dell'authorName da parte dell'autore.
+          || (
+            resource.data.authorId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authorName'])
+          )
+          // Approvazione/rifiuto riservati all'admin (il rifiuto porta con sé
+          // la motivazione obbligatoria e la scadenza a 7 giorni).
+          || (
+            isAdmin()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'rejectionReason', 'rejectedAt', 'expireAt'])
+            && (
+              request.resource.data.status == 'approved'
+              || request.resource.data.status == 'rejected'
+            )
+          )
+        );
+
+      allow delete: if request.auth != null
+        && (
+          resource.data.authorId == request.auth.uid
+          // Pulizia dei rifiutati scaduti: solo admin, solo dopo la scadenza.
+          || (
+            isAdmin()
+            && resource.data.status == 'rejected'
+            && resource.data.expireAt != null
+            && resource.data.expireAt < request.time
+          )
+        );
+    }
+  }
+}
