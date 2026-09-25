@@ -102,8 +102,15 @@ export default function ProfilePage() {
               key={note.id}
               className="rounded-[24px] border border-ink/10 bg-paper/80 p-5 shadow-soft"
             >
-              <span className="rounded-full bg-forest/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-forest">
-                {note.subject || 'Altro'}
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-forest/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-forest">
+                  {note.subject || 'Altro'}
+                </span>
+                {note.professor && (
+                  <span className="rounded-full bg-copper/12 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-copper">
+                    {note.professor}
+                  </span>
+                )}
               </span>
               <h3 className="mt-3 font-display text-xl leading-tight text-ink">{note.title}</h3>
               <p className="mt-2 text-sm font-semibold text-ink/60">
@@ -126,7 +133,10 @@ export default function ProfilePage() {
                 In attesa di revisione Admin
               </span>
               <h3 className="mt-3 font-display text-xl leading-tight text-ink">{note.title}</h3>
-              <p className="mt-2 text-sm text-ink/60">{note.subject || 'Altro'}</p>
+              <p className="mt-2 text-sm text-ink/60">
+                {note.subject || 'Altro'}
+                {note.professor ? ` · ${note.professor}` : ''}
+              </p>
             </li>
           ))}
           {rejected.map((note) => (
@@ -138,7 +148,10 @@ export default function ProfilePage() {
                 Rifiutato dall’Admin
               </span>
               <h3 className="mt-3 font-display text-xl leading-tight text-ink">{note.title}</h3>
-              <p className="mt-2 text-sm text-ink/60">{note.subject || 'Altro'}</p>
+              <p className="mt-2 text-sm text-ink/60">
+                {note.subject || 'Altro'}
+                {note.professor ? ` · ${note.professor}` : ''}
+              </p>
               <p className="mt-3 rounded-2xl bg-white/60 px-4 py-3 text-sm leading-relaxed text-ink/75">
                 <span className="font-semibold text-copper">Motivazione: </span>
                 {note.rejectionReason || 'Nessuna motivazione fornita.'}

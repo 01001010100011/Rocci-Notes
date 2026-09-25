@@ -9,7 +9,12 @@ service cloud.firestore {
     }
 
     function isAdminEmail() {
-      return request.auth != null && request.auth.token.email == 'leoriellooo@gmail.com';
+      return request.auth != null
+        && request.auth.token.email in [
+          'leoriellooo@gmail.com',
+          'federicafan09@gmail.com',
+          'fmillesimi@gmail.com'
+        ];
     }
 
     // Profili utente: ogni studente legge e modifica solo il proprio documento.
@@ -81,10 +86,12 @@ service cloud.firestore {
         && request.resource.data.title.size() > 0
         && request.resource.data.title.size() <= 140
         && request.resource.data.subject is string
+        && request.resource.data.professor is string
+        && request.resource.data.professor.size() > 0
         && request.resource.data.fileUrl is string
         && request.resource.data.fileUrl.matches('https://res\\.cloudinary\\.com/.*')
         && request.resource.data.keys().hasAll([
-          'title', 'subject', 'description', 'fileUrl',
+          'title', 'subject', 'professor', 'description', 'fileUrl',
           'authorId', 'authorName', 'createdAt', 'downloadsCount', 'status'
         ]);
 

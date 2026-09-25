@@ -11,6 +11,8 @@ import { useAuth } from '../context/AuthContext'
 import {
   FILE_TOO_LARGE_MESSAGE,
   MAX_FILE_SIZE_BYTES,
+  PROFESSORI,
+  REQUIRED_FIELDS_MESSAGE,
   SUBJECTS,
   UPLOAD_SUCCESS_MESSAGE,
 } from '../constants'
@@ -24,10 +26,14 @@ export default function UploadPage() {
   const navigate = useNavigate()
   const [title, setTitle] = useState('')
   const [subject, setSubject] = useState('')
+  const [professor, setProfessor] = useState('')
   const [description, setDescription] = useState('')
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+
+  const canSubmit =
+    title.trim().length > 0 && Boolean(subject) && Boolean(professor) && Boolean(file)
 
   function handleFileChange(event) {
     const nextFile = event.target.files?.[0] ?? null
@@ -69,6 +75,14 @@ export default function UploadPage() {
       setError('Scegli una materia dal menu.')
       return
     }
+    if (!professor) {
+      setError('Seleziona il professore dal menu.')
+      return
+    }
+    if (!title.trim() || !subject || !professor || !file) {
+      setError(REQUIRED_FIELDS_MESSAGE)
+      return
+    }
 
     setBusy(true)
     setError('')
@@ -82,6 +96,7 @@ export default function UploadPage() {
       await addDoc(collection(db, 'notes'), {
         title: title.trim(),
         subject,
+        professor,
         description: description.trim(),
         fileUrl,
         authorId: user.uid,
@@ -147,6 +162,27 @@ export default function UploadPage() {
 
         <label className="mt-4 block">
           <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/55">
+            Professore
+          </span>
+          <select
+            required
+            value={professor}
+            onChange={(e) => setProfessor(e.target.value)}
+            className="w-full appearance-none rounded-2xl border border-ink/10 bg-white/60 px-4 py-3 outline-none focus:ring-2 focus:ring-copper/40"
+          >
+            <option value="" disabled>
+              Seleziona un professore
+            </option>
+            {PROFESSORI.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="mt-4 block">
+          <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/55">
             Descrizione breve
           </span>
           <textarea
@@ -179,9 +215,15 @@ export default function UploadPage() {
           <p className="mt-4 rounded-2xl bg-copper/10 px-4 py-3 text-sm text-copper">{error}</p>
         )}
 
+        {!canSubmit && !error && (
+          <p className="mt-4 rounded-2xl bg-ink/5 px-4 py-3 text-sm text-ink/55">
+            {REQUIRED_FIELDS_MESSAGE}
+          </p>
+        )}
+
         <button
           type="submit"
-          disabled={busy}
+          disabled={busy || !canSubmit}
           className="mt-6 w-full rounded-2xl bg-copper py-3.5 font-semibold text-paper disabled:opacity-60"
         >
           {busy ? 'Caricamento…' : 'Pubblica in bacheca'}

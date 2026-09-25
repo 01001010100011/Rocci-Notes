@@ -217,10 +217,15 @@ function NoteGrid({ notes, onOpen, showStatus = false }) {
             onClick={() => onOpen(note)}
             className="flex h-full w-full flex-col rounded-[24px] border border-ink/10 bg-paper/80 p-5 text-left shadow-soft transition hover:border-copper/50"
           >
-            <span className="flex items-center gap-2">
+            <span className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-forest/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-forest">
                 {note.subject || 'Altro'}
               </span>
+              {note.professor && (
+                <span className="rounded-full bg-copper/12 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-copper">
+                  {note.professor}
+                </span>
+              )}
               {showStatus && (
                 <span
                   className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider ${
@@ -282,6 +287,11 @@ function ReviewModal({ note, busy, error, onClose, onApprove, onReject }) {
               <span className="rounded-full bg-forest/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-forest">
                 {note.subject || 'Altro'}
               </span>
+              {note.professor && (
+                <span className="rounded-full bg-copper/12 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-copper">
+                  {note.professor}
+                </span>
+              )}
               <span
                 className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider ${
                   note.status === 'approved'

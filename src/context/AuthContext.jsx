@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth'
 import { doc, onSnapshot, runTransaction, serverTimestamp } from 'firebase/firestore'
 import { auth, db, googleProvider } from '../firebase'
-import { ADMIN_EMAIL } from '../constants'
+import { ADMIN_EMAILS } from '../constants'
 
 const AuthContext = createContext(null)
 
@@ -25,7 +25,7 @@ export async function ensureUserDocument(user, extras = {}) {
   await runTransaction(db, async (transaction) => {
     const snapshot = await transaction.get(userRef)
     const username = extras.username || usernameFromUser(user)
-    const role = user.email === ADMIN_EMAIL ? 'admin' : 'student'
+    const role = ADMIN_EMAILS.includes(user.email) ? 'admin' : 'student'
 
     if (!snapshot.exists()) {
       transaction.set(userRef, {

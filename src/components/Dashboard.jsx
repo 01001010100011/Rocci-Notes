@@ -192,8 +192,15 @@ function NoteCard({ note, isOwner, alreadyDownloaded, credits, userId }) {
   return (
     <li className="flex flex-col rounded-[24px] border border-ink/10 bg-paper/80 p-5 shadow-soft">
       <div className="flex items-start justify-between gap-3">
-        <span className="rounded-full bg-forest/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-forest">
-          {note.subject || 'Altro'}
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-forest/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-forest">
+            {note.subject || 'Altro'}
+          </span>
+          {note.professor && (
+            <span className="rounded-full bg-copper/12 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-copper">
+              {note.professor}
+            </span>
+          )}
         </span>
         <span className="text-xs font-semibold text-ink/45">
           {note.downloadsCount ?? 0} download
