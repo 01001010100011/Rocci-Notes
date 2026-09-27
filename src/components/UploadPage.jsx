@@ -16,12 +16,14 @@ import {
   SUBJECTS,
   UPLOAD_SUCCESS_MESSAGE,
 } from '../constants'
+import useDocumentTitle from '../useDocumentTitle'
 
 function isSupportedFile(file) {
   return file.type === 'application/pdf' || file.type.startsWith('image/')
 }
 
 export default function UploadPage() {
+  useDocumentTitle('Carica un appunto')
   const { user, profile } = useAuth()
   const navigate = useNavigate()
   const [title, setTitle] = useState('')

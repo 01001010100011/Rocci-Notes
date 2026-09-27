@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore'
 import { db } from '../firebase'
+import useDocumentTitle from '../useDocumentTitle'
 
 const TABS = [
   { key: 'contributors', label: 'Top Contributori', field: 'uploadsCount', unit: 'appunti approvati' },
@@ -19,6 +20,7 @@ function pickRankEntry(item) {
 }
 
 export default function StatsPage() {
+  useDocumentTitle('Classifica')
   const [tab, setTab] = useState('contributors')
   const [contributors, setContributors] = useState([])
   const [downloaders, setDownloaders] = useState([])

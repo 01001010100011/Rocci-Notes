@@ -15,6 +15,7 @@ import { db } from '../firebase'
 import { REJECTION_TTL_BANNER, REJECTION_TTL_DAYS } from '../constants'
 import { useAuth } from '../context/AuthContext'
 import VoucherPanel from './VoucherPanel'
+import useDocumentTitle from '../useDocumentTitle'
 
 const STATUS_LABEL = {
   pending: 'In attesa',
@@ -49,6 +50,7 @@ async function purgeExpiredRejections() {
 }
 
 export default function AdminPage() {
+  useDocumentTitle('Pannello Admin')
   const { isSuperAdmin } = useAuth()
   const [tab, setTab] = useState('queue')
   const [pending, setPending] = useState([])

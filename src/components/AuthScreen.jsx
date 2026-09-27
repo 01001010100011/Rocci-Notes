@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import useDocumentTitle from '../useDocumentTitle'
 
 export default function AuthScreen() {
+  useDocumentTitle('Accedi o registrati')
   const { loginWithEmail, registerWithEmail, loginWithGoogle, error, setError } = useAuth()
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')

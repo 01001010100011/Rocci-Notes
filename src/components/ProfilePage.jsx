@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import useDocumentTitle from '../useDocumentTitle'
 import {
   arrayUnion,
   collection,
@@ -30,6 +31,7 @@ const TABS = [
 ]
 
 export default function ProfilePage() {
+  useDocumentTitle('Il mio Profilo')
   const { user, profile, isAdmin } = useAuth()
   const [tab, setTab] = useState('approved')
   const [myNotes, setMyNotes] = useState([])

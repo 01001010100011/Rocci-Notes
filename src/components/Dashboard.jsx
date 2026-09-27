@@ -16,8 +16,10 @@ import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { INSUFFICIENT_CREDITS_MESSAGE, PROFESSORI, SUBJECTS } from '../constants'
 import { downloadWatermarked } from '../watermark'
+import useDocumentTitle from '../useDocumentTitle'
 
 export default function Dashboard() {
+  useDocumentTitle('Feed appunti')
   const { user, profile, isAdmin } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
