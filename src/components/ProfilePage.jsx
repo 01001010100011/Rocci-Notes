@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
+import { downloadWatermarked } from '../watermark'
 import {
   VOUCHER_ALREADY_USED_MESSAGE,
   VOUCHER_EXHAUSTED_MESSAGE,
@@ -191,20 +192,43 @@ export default function ProfilePage() {
                   ? item.downloadedAt.toDate().toLocaleDateString('it-IT')
                   : '—'}
               </p>
-              <a
-                href={item.fileUrl}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="mt-4 rounded-2xl bg-ink py-3 text-center text-sm font-semibold text-paper"
-              >
-                Download PDF (gratis)
-              </a>
+              <RedownloadButton
+                item={item}
+                username={profile?.username || user.displayName || 'Studente'}
+                email={user.email}
+              />
             </li>
           ))}
           {downloads.length === 0 && <EmptyHint text="Non hai ancora scaricato appunti." />}
         </ul>
       )}
     </main>
+  )
+}
+
+function RedownloadButton({ item, username, email }) {
+  const [busy, setBusy] = useState(false)
+
+  async function handleRedownload() {
+    setBusy(true)
+    try {
+      await downloadWatermarked(item.fileUrl, { title: item.title, username, email })
+    } catch (err) {
+      window.alert(err.message || 'Download non riuscito.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={handleRedownload}
+      className="mt-4 rounded-2xl bg-ink py-3 text-center text-sm font-semibold text-paper disabled:opacity-60"
+    >
+      {busy ? 'Generazione PDF in corso…' : 'Scarica di nuovo (gratis)'}
+    </button>
   )
 }
 

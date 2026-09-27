@@ -15,6 +15,7 @@ import {
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { INSUFFICIENT_CREDITS_MESSAGE, PROFESSORI, SUBJECTS } from '../constants'
+import { downloadWatermarked } from '../watermark'
 
 export default function Dashboard() {
   const { user, profile, isAdmin } = useAuth()
@@ -170,6 +171,8 @@ export default function Dashboard() {
               credits={profile?.credits ?? 0}
               userId={user.uid}
               isAdmin={isAdmin}
+              username={profile?.username || user.displayName || 'Studente'}
+              email={user.email}
             />
           ))}
         </ul>
@@ -213,20 +216,16 @@ function NoMatchState({ onReset }) {
   )
 }
 
-function NoteCard({ note, isOwner, alreadyDownloaded, credits, userId, isAdmin }) {
+function NoteCard({ note, isOwner, alreadyDownloaded, credits, userId, isAdmin, username, email }) {
   const [busy, setBusy] = useState(false)
 
   async function handleDownload() {
-    // Aprire una scheda durante il click evita che i browser blocchino il download
-    // dopo l'operazione asincrona su Firestore.
-    const downloadWindow = window.open('', '_blank')
     setBusy(true)
     try {
       const downloadRef = doc(db, 'users', userId, 'downloads', note.id)
       const alreadyDownloaded = (await getDoc(downloadRef)).exists()
 
       if (!alreadyDownloaded && !isAdmin && credits < 1) {
-        downloadWindow?.close()
         window.alert(INSUFFICIENT_CREDITS_MESSAGE)
         return
       }
@@ -265,14 +264,8 @@ function NoteCard({ note, isOwner, alreadyDownloaded, credits, userId, isAdmin }
         })
       }
 
-      if (downloadWindow) {
-        downloadWindow.opener = null
-        downloadWindow.location.replace(note.fileUrl)
-      } else {
-        window.alert('Download autorizzato, ma il browser ha bloccato la nuova scheda.')
-      }
+      await downloadWatermarked(note.fileUrl, { title: note.title, username, email })
     } catch (err) {
-      downloadWindow?.close()
       window.alert(err.message || 'Download non riuscito.')
     } finally {
       setBusy(false)
@@ -312,7 +305,7 @@ function NoteCard({ note, isOwner, alreadyDownloaded, credits, userId, isAdmin }
         className="mt-5 rounded-2xl bg-ink py-3 text-sm font-semibold text-paper disabled:opacity-60"
       >
         {busy
-          ? 'Apertura…'
+          ? 'Generazione PDF in corso…'
           : alreadyDownloaded
             ? 'Riscarica gratis'
             : isAdmin
