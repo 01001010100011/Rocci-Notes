@@ -4,16 +4,32 @@ import useDocumentTitle from '../useDocumentTitle'
 
 export default function AuthScreen() {
   useDocumentTitle('Accedi o registrati')
-  const { loginWithEmail, registerWithEmail, loginWithGoogle, error, setError } = useAuth()
+  const {
+    loginWithEmail,
+    registerWithEmail,
+    loginWithGoogle,
+    resetPassword,
+    error,
+    setError,
+  } = useAuth()
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
   const [busy, setBusy] = useState(false)
   const [localError, setLocalError] = useState('')
+  const [resetSent, setResetSent] = useState(false)
 
   const isRegister = mode === 'register'
+  const isReset = mode === 'reset'
   const message = localError || error
+
+  function switchMode(next) {
+    setMode(next)
+    setLocalError('')
+    setError('')
+    setResetSent(false)
+  }
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -27,6 +43,23 @@ export default function AuthScreen() {
       } else {
         await loginWithEmail(email.trim(), password)
       }
+    } catch (err) {
+      setLocalError(mapAuthError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleReset(event) {
+    event.preventDefault()
+    setLocalError('')
+    setError('')
+    setResetSent(false)
+    setBusy(true)
+
+    try {
+      await resetPassword(email.trim())
+      setResetSent(true)
     } catch (err) {
       setLocalError(mapAuthError(err))
     } finally {
@@ -82,13 +115,74 @@ export default function AuthScreen() {
         </header>
 
         <section className="relative rounded-[28px] border border-ink/10 bg-paper/90 p-5 shadow-lift backdrop-blur-sm sm:p-8">
+          {isReset ? (
+            <div className="flex flex-col">
+              <h2 className="font-display text-2xl text-ink">Recupera la tua password</h2>
+              <p className="mt-2 text-sm leading-relaxed text-ink/65">
+                Inserisci l'indirizzo email associato al tuo account e ti invieremo un link
+                per crearne una nuova.
+              </p>
+
+              <form className="mt-6 flex flex-col gap-4" onSubmit={handleReset}>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/55">
+                    Email
+                  </span>
+                  <input
+                    className="w-full rounded-2xl border border-ink/10 bg-white/50 px-4 py-3 outline-none ring-copper/40 transition focus:ring-2"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="ivan.p@example.net"
+                    autoComplete="email"
+                  />
+                </label>
+
+                {resetSent && (
+                  <p className="flex items-start gap-2 rounded-2xl bg-forest/10 px-4 py-3 text-sm text-forest">
+                    <CheckIcon />
+                    <span>
+                      Email di ripristino inviata con successo! Controlla la tua casella di
+                      posta elettronica (e la cartella Spam).
+                    </span>
+                  </p>
+                )}
+
+                {message && !resetSent && (
+                  <p className="rounded-2xl bg-copper/10 px-4 py-3 text-sm text-copper">
+                    {message}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="mt-1 flex items-center justify-center gap-2 rounded-2xl bg-ink py-3.5 font-semibold text-paper transition hover:bg-forest disabled:opacity-60"
+                >
+                  {busy && <Spinner />}
+                  {busy ? 'Invio in corso…' : 'Invia Email di Ripristino'}
+                </button>
+              </form>
+
+              <button
+                type="button"
+                onClick={() => switchMode('login')}
+                className="mt-4 inline-flex items-center justify-center gap-2 text-sm font-semibold text-ink/60 transition hover:text-copper"
+              >
+                <BackIcon />
+                Torna al Login
+              </button>
+            </div>
+          ) : (
+          <>
           <div className="mb-6 flex rounded-full bg-ink/5 p-1">
             <button
               type="button"
               className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${
                 !isRegister ? 'bg-ink text-paper' : 'text-ink/60'
               }`}
-              onClick={() => setMode('login')}
+              onClick={() => switchMode('login')}
             >
               Accedi
             </button>
@@ -97,7 +191,7 @@ export default function AuthScreen() {
               className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${
                 isRegister ? 'bg-ink text-paper' : 'text-ink/60'
               }`}
-              onClick={() => setMode('register')}
+              onClick={() => switchMode('register')}
             >
               Registrati
             </button>
@@ -150,6 +244,16 @@ export default function AuthScreen() {
               />
             </label>
 
+            {!isRegister && (
+              <button
+                type="button"
+                onClick={() => switchMode('reset')}
+                className="-mt-1 self-end text-sm font-semibold text-copper underline-offset-2 transition hover:underline"
+              >
+                Password dimenticata?
+              </button>
+            )}
+
             {message && (
               <p className="rounded-2xl bg-copper/10 px-4 py-3 text-sm text-copper">{message}</p>
             )}
@@ -178,6 +282,8 @@ export default function AuthScreen() {
             <GoogleMark />
             Accedi con Google
           </button>
+          </>
+          )}
         </section>
       </div>
     </div>
@@ -207,8 +313,42 @@ function GoogleMark() {
   )
 }
 
+function Spinner() {
+  return (
+    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+      <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg className="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="m3 8.5 3.2 3.2L13 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function BackIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M13 8H3M7 4 3 8l4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function mapAuthError(err) {
   const code = err?.code || ''
+  if (code.includes('user-not-found')) {
+    return 'Nessun account trovato con questo indirizzo email.'
+  }
+  if (code.includes('invalid-email')) {
+    return 'Inserisci un indirizzo email valido.'
+  }
+  if (code.includes('too-many-requests')) {
+    return 'Troppi tentativi effettuati. Riprova più tardi.'
+  }
   if (code.includes('invalid-credential') || code.includes('wrong-password')) {
     return 'Email o password non corretti.'
   }

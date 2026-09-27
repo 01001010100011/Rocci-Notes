@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -130,6 +131,9 @@ export function AuthProvider({ children }) {
       loginWithGoogle: async () => {
         const credential = await signInWithPopup(auth, googleProvider)
         await ensureUserDocument(credential.user)
+      },
+      resetPassword: async (email) => {
+        await sendPasswordResetEmail(auth, email)
       },
       logout: () => signOut(auth),
     }),
