@@ -1,21 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import {
-  collection,
-  doc,
-  getDoc,
-  increment,
-  onSnapshot,
-  orderBy,
-  query,
-  runTransaction,
-  serverTimestamp,
-  where,
-} from 'firebase/firestore'
+import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
-import { INSUFFICIENT_CREDITS_MESSAGE, PROFESSORI, SUBJECTS } from '../constants'
-import { downloadWatermarked } from '../watermark'
+import { PROFESSORI, SUBJECTS } from '../constants'
+import { downloadNote } from '../downloadNote'
 import useDocumentTitle from '../useDocumentTitle'
 
 export default function Dashboard() {
@@ -224,49 +213,7 @@ function NoteCard({ note, isOwner, alreadyDownloaded, credits, userId, isAdmin, 
   async function handleDownload() {
     setBusy(true)
     try {
-      const downloadRef = doc(db, 'users', userId, 'downloads', note.id)
-      const alreadyDownloaded = (await getDoc(downloadRef)).exists()
-
-      if (!alreadyDownloaded && !isAdmin && credits < 1) {
-        window.alert(INSUFFICIENT_CREDITS_MESSAGE)
-        return
-      }
-
-      if (!alreadyDownloaded) {
-        await runTransaction(db, async (transaction) => {
-          const userRef = doc(db, 'users', userId)
-          const noteRef = doc(db, 'notes', note.id)
-          const userSnapshot = await transaction.get(userRef)
-          const downloadSnapshot = await transaction.get(downloadRef)
-
-          // Già acquistato tra il controllo e la transazione: niente addebito.
-          if (downloadSnapshot.exists()) return
-
-          if (!userSnapshot.exists()) {
-            throw new Error(INSUFFICIENT_CREDITS_MESSAGE)
-          }
-          if (!isAdmin && (userSnapshot.data().credits ?? 0) < 1) {
-            throw new Error(INSUFFICIENT_CREDITS_MESSAGE)
-          }
-
-          transaction.update(
-            userRef,
-            isAdmin
-              ? { downloadsCount: increment(1) }
-              : { credits: increment(-1), downloadsCount: increment(1) },
-          )
-          transaction.update(noteRef, { downloadsCount: increment(1) })
-          transaction.set(downloadRef, {
-            noteId: note.id,
-            title: note.title,
-            subject: note.subject || '',
-            fileUrl: note.fileUrl,
-            downloadedAt: serverTimestamp(),
-          })
-        })
-      }
-
-      await downloadWatermarked(note.fileUrl, { title: note.title, username, email })
+      await downloadNote({ note, userId, isAdmin, credits, username, email })
     } catch (err) {
       window.alert(err.message || 'Download non riuscito.')
     } finally {
