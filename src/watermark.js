@@ -38,17 +38,37 @@ function triggerDownload(blob, filename) {
   window.setTimeout(() => URL.revokeObjectURL(url), 4000)
 }
 
+export function saveWatermarkedFile({ blob, filename }) {
+  triggerDownload(blob, filename)
+}
+
 async function fetchArrayBuffer(fileUrl) {
-  const response = await fetch(fileUrl, { mode: 'cors' })
+  let response
+  try {
+    response = await fetch(fileUrl, { mode: 'cors' })
+  } catch {
+    throw new Error('Connessione al file non riuscita. Controlla la rete e riprova.')
+  }
   if (!response.ok) {
     throw new Error('Impossibile recuperare il file originale.')
   }
   return response.arrayBuffer()
 }
 
-async function watermarkPdf(fileUrl, { title, username, email }) {
+// Genera il PDF con il timbro antipirateria e restituisce il Blob, senza farlo
+// scaricare: il chiamante decide quando innescare il download (dopo l'addebito).
+async function buildWatermarkedPdf(fileUrl, { title, username, email }) {
   const arrayBuffer = await fetchArrayBuffer(fileUrl)
-  const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true })
+
+  let pdfDoc
+  try {
+    pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true })
+  } catch {
+    throw new Error(
+      'Il PDF sembra danneggiato o protetto da password e non può essere elaborato.',
+    )
+  }
+
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
   const stamp = buildStamp(username, email)
 
@@ -70,7 +90,7 @@ async function watermarkPdf(fileUrl, { title, username, email }) {
   }
 
   const bytes = await pdfDoc.save()
-  triggerDownload(new Blob([bytes], { type: 'application/pdf' }), sanitizeFilename(title, 'pdf'))
+  return { blob: new Blob([bytes], { type: 'application/pdf' }), filename: sanitizeFilename(title, 'pdf') }
 }
 
 function loadImage(fileUrl) {
@@ -82,7 +102,6 @@ function loadImage(fileUrl) {
     image.src = fileUrl
   })
 }
-
 function fitFont(ctx, lines, startSize, maxWidth, family) {
   let size = startSize
   while (size > 6) {
@@ -95,7 +114,7 @@ function fitFont(ctx, lines, startSize, maxWidth, family) {
   return size
 }
 
-async function watermarkImage(fileUrl, { title, username, email }) {
+async function buildWatermarkedImage(fileUrl, { title, username, email }) {
   const image = await loadImage(fileUrl)
   const canvas = document.createElement('canvas')
   canvas.width = image.naturalWidth || image.width
@@ -130,16 +149,22 @@ async function watermarkImage(fileUrl, { title, username, email }) {
       0.92,
     )
   })
-  triggerDownload(blob, sanitizeFilename(title, ext))
+  return { blob, filename: sanitizeFilename(title, ext) }
 }
 
-export async function downloadWatermarked(fileUrl, { title, username, email }) {
+// Prepara il file con il timbro antipirateria e lo restituisce come Blob + nome,
+// senza innescare il download. Serve a scaricare il credito solo a file pronto.
+export async function buildWatermarkedFile(fileUrl, { title, username, email }) {
   if (!fileUrl) {
     throw new Error('File non disponibile.')
   }
   if (isPdfUrl(fileUrl)) {
-    await watermarkPdf(fileUrl, { title, username, email })
-  } else {
-    await watermarkImage(fileUrl, { title, username, email })
+    return buildWatermarkedPdf(fileUrl, { title, username, email })
   }
+  return buildWatermarkedImage(fileUrl, { title, username, email })
+}
+
+export async function downloadWatermarked(fileUrl, { title, username, email }) {
+  const { blob, filename } = await buildWatermarkedFile(fileUrl, { title, username, email })
+  triggerDownload(blob, filename)
 }

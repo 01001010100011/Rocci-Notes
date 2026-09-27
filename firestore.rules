@@ -68,9 +68,10 @@ service cloud.firestore {
 
       allow update: if request.auth != null
         && (
-          // Proprietario: crediti ±1, username, email, downloadsCount +1 quando
-          // scarica; uploadsCount può solo essere inizializzato a 0 (backfill),
-          // mai incrementato da sé.
+          // Proprietario: username, email, downloadsCount +1 quando scarica e
+          // credits -1 per il costo del download (mai +1: l'accredito passa solo
+          // da approvazione admin o riscatto voucher). I crediti non vanno sotto 0.
+          // uploadsCount può solo essere inizializzato a 0 (backfill), mai incrementato da sé.
           (
             request.auth.uid == userId
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -78,9 +79,9 @@ service cloud.firestore {
             ])
             && (
               request.resource.data.credits == resource.data.credits
-              || request.resource.data.credits == resource.data.credits + 1
               || request.resource.data.credits == resource.data.credits - 1
             )
+            && request.resource.data.credits >= 0
             && (
               afterDownloads() == beforeDownloads()
               || afterDownloads() == beforeDownloads() + 1

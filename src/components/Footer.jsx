@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 export default function Footer() {
   return (
     <footer className="mx-auto mt-14 max-w-6xl border-t border-ink/10 pt-8">
@@ -49,9 +51,19 @@ export default function Footer() {
         </div>
       </div>
 
-      <p className="mt-8 pb-2 text-xs text-ink/40">
-        © {new Date().getFullYear()} Rocci Notes · Fatto per gli studenti, dagli studenti.
-      </p>
+      <div className="mt-8 flex flex-col gap-2 pb-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-ink/40">
+          © {new Date().getFullYear()} Rocci Notes · Fatto per gli studenti, dagli studenti.
+        </p>
+        <nav className="flex items-center gap-4 text-xs font-semibold">
+          <Link to="/privacy" className="text-ink/55 underline-offset-2 hover:text-copper hover:underline">
+            Privacy Policy
+          </Link>
+          <Link to="/terms" className="text-ink/55 underline-offset-2 hover:text-copper hover:underline">
+            Termini e Condizioni
+          </Link>
+        </nav>
+      </div>
     </footer>
   )
 }

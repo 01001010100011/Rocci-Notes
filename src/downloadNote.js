@@ -7,7 +7,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import { INSUFFICIENT_CREDITS_MESSAGE } from './constants'
-import { downloadWatermarked } from './watermark'
+import { buildWatermarkedFile, saveWatermarkedFile } from './watermark'
 
 // Acquista (se serve) e scarica un appunto con watermark. Solleva Error con un
 // messaggio già in italiano; il chiamante decide se mostrarlo come alert o banner.
@@ -18,6 +18,10 @@ export async function downloadNote({ note, userId, isAdmin, credits, username, e
   if (!alreadyDownloaded && !isAdmin && credits < 1) {
     throw new Error(INSUFFICIENT_CREDITS_MESSAGE)
   }
+
+  // Il file viene preparato PRIMA dell'addebito: se il PDF è danneggiato, la rete
+  // cade o il watermark fallisce, l'utente non perde alcun credito.
+  const file = await buildWatermarkedFile(note.fileUrl, { title: note.title, username, email })
 
   if (!alreadyDownloaded) {
     await runTransaction(db, async (transaction) => {
@@ -53,6 +57,6 @@ export async function downloadNote({ note, userId, isAdmin, credits, username, e
     })
   }
 
-  await downloadWatermarked(note.fileUrl, { title: note.title, username, email })
+  saveWatermarkedFile(file)
   return { charged: !alreadyDownloaded }
 }

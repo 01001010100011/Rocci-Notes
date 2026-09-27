@@ -1,4 +1,4 @@
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import AuthScreen from './components/AuthScreen'
 import AppShell from './components/AppShell'
@@ -8,6 +8,11 @@ import ProfilePage from './components/ProfilePage'
 import AdminPage from './components/AdminPage'
 import StatsPage from './components/StatsPage'
 import NotFound from './components/NotFound'
+import PrivacyPolicy from './components/PrivacyPolicy'
+import Terms from './components/Terms'
+import CookieBanner from './components/CookieBanner'
+
+const LEGAL_PATHS = ['/privacy', '/terms']
 
 function AdminRoute() {
   const { profile } = useAuth()
@@ -19,6 +24,17 @@ function AdminRoute() {
 
 function Gate() {
   const { user, loading } = useAuth()
+  const location = useLocation()
+
+  // Le pagine legali sono pubbliche: visibili anche senza accesso.
+  if (LEGAL_PATHS.includes(location.pathname)) {
+    return (
+      <Routes>
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<Terms />} />
+      </Routes>
+    )
+  }
 
   if (loading) {
     return (
@@ -50,6 +66,7 @@ export default function App() {
   return (
     <AuthProvider>
       <HashRouter>
+        <CookieBanner />
         <Gate />
       </HashRouter>
     </AuthProvider>
