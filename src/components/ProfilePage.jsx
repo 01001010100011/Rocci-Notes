@@ -1,18 +1,26 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  arrayUnion,
   collection,
   doc,
   getDocs,
+  increment,
   onSnapshot,
   orderBy,
   query,
+  runTransaction,
   updateDoc,
   where,
   writeBatch,
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
+import {
+  VOUCHER_ALREADY_USED_MESSAGE,
+  VOUCHER_EXHAUSTED_MESSAGE,
+  VOUCHER_INVALID_MESSAGE,
+} from '../constants'
 
 const TABS = [
   ['approved', 'I Miei Appunti Approvati'],
@@ -21,7 +29,7 @@ const TABS = [
 ]
 
 export default function ProfilePage() {
-  const { user, profile } = useAuth()
+  const { user, profile, isAdmin } = useAuth()
   const [tab, setTab] = useState('approved')
   const [myNotes, setMyNotes] = useState([])
   const [downloads, setDownloads] = useState([])
@@ -73,10 +81,12 @@ export default function ProfilePage() {
           </div>
           <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-copper/15 px-3 py-1.5 text-sm font-bold text-copper">
             <CoinIcon />
-            {profile?.credits ?? 0} crediti
+            {isAdmin ? '∞ crediti' : `${profile?.credits ?? 0} crediti`}
           </span>
         </div>
       </section>
+
+      <RedeemVoucher userId={user.uid} isAdmin={isAdmin} />
 
       <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
         {TABS.map(([key, label]) => (
@@ -195,6 +205,106 @@ export default function ProfilePage() {
         </ul>
       )}
     </main>
+  )
+}
+
+function RedeemVoucher({ userId, isAdmin }) {
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  async function handleRedeem(event) {
+    event.preventDefault()
+    const normalized = code.trim().toUpperCase().replace(/\s+/g, '')
+    if (!normalized) {
+      setError('Inserisci un codice.')
+      setSuccess('')
+      return
+    }
+
+    setBusy(true)
+    setError('')
+    setSuccess('')
+    try {
+      const granted = await runTransaction(db, async (transaction) => {
+        const voucherRef = doc(db, 'vouchers', normalized)
+        const userRef = doc(db, 'users', userId)
+        const voucherSnap = await transaction.get(voucherRef)
+
+        if (!voucherSnap.exists()) {
+          throw new Error(VOUCHER_INVALID_MESSAGE)
+        }
+
+        const voucher = voucherSnap.data()
+        if ((voucher.usedBy || []).includes(userId)) {
+          throw new Error(VOUCHER_ALREADY_USED_MESSAGE)
+        }
+        if ((voucher.usedCount ?? 0) >= (voucher.maxUses ?? 0)) {
+          throw new Error(VOUCHER_EXHAUSTED_MESSAGE)
+        }
+
+        transaction.update(userRef, {
+          credits: increment(voucher.credits),
+          redeemedCodes: arrayUnion(normalized),
+          lastRedeemedCode: normalized,
+        })
+        transaction.update(voucherRef, {
+          usedCount: increment(1),
+          usedBy: arrayUnion(userId),
+        })
+        return voucher.credits
+      })
+
+      setSuccess(`Codice riscattato! Hai ricevuto +${granted} crediti`)
+      setCode('')
+    } catch (err) {
+      setError(err.message || 'Riscatto non riuscito.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (isAdmin) {
+    return (
+      <section className="mt-6 rounded-[28px] border border-ink/10 bg-paper/85 p-5 shadow-soft sm:p-6">
+        <h2 className="font-display text-2xl text-ink">Riscatta un Codice Promo</h2>
+        <p className="mt-2 text-sm text-ink/60">
+          Hai già crediti infiniti da admin: non ti serve riscattare codici.
+        </p>
+      </section>
+    )
+  }
+
+  return (
+    <section className="mt-6 rounded-[28px] border border-ink/10 bg-paper/85 p-5 shadow-soft sm:p-6">
+      <h2 className="font-display text-2xl text-ink">Riscatta un Codice Promo</h2>
+      <p className="mt-2 text-sm text-ink/60">
+        Inserisci il codice che hai ricevuto per ottenere crediti extra.
+      </p>
+      <form onSubmit={handleRedeem} className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <input
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value)
+            setError('')
+            setSuccess('')
+          }}
+          placeholder="Es. ROCCI2026"
+          autoComplete="off"
+          className="w-full rounded-2xl border border-ink/10 bg-white/60 px-4 py-3 text-sm uppercase outline-none focus:ring-2 focus:ring-copper/40 sm:max-w-xs"
+        />
+        <button
+          type="submit"
+          disabled={busy}
+          className="shrink-0 rounded-2xl bg-forest px-6 py-3 text-sm font-semibold text-paper transition hover:opacity-90 disabled:opacity-60"
+        >
+          {busy ? 'Verifico…' : 'Riscatta'}
+        </button>
+      </form>
+      {error && <p className="mt-3 text-sm font-semibold text-copper">{error}</p>}
+      {success && <p className="mt-3 text-sm font-semibold text-forest">{success}</p>}
+    </section>
   )
 }
 

@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth'
 import { doc, onSnapshot, runTransaction, serverTimestamp } from 'firebase/firestore'
 import { auth, db, googleProvider } from '../firebase'
-import { ADMIN_EMAILS } from '../constants'
+import { ADMIN_EMAILS, SUPER_ADMIN_EMAIL } from '../constants'
 
 const AuthContext = createContext(null)
 
@@ -110,6 +110,7 @@ export function AuthProvider({ children }) {
       user,
       profile,
       isAdmin: profile?.role === 'admin',
+      isSuperAdmin: user?.email === SUPER_ADMIN_EMAIL,
       loading,
       error,
       setError,

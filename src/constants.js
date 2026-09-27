@@ -1,10 +1,19 @@
 export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 
+export const SUPER_ADMIN_EMAIL = 'leoriellooo@gmail.com'
+
 export const ADMIN_EMAILS = [
-  'leoriellooo@gmail.com',
+  SUPER_ADMIN_EMAIL,
   'federicafan09@gmail.com',
   'fmillesimi@gmail.com',
 ]
+
+export const VOUCHER_INVALID_MESSAGE = 'Codice non valido'
+
+export const VOUCHER_ALREADY_USED_MESSAGE = 'Hai già riscattato questo codice in passato'
+
+export const VOUCHER_EXHAUSTED_MESSAGE =
+  'Codice esaurito! Il limite massimo di riscatti è stato raggiunto'
 
 export const FILE_TOO_LARGE_MESSAGE =
   'Il file è troppo grande. Il limite massimo è di 10 MB.'

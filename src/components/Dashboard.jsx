@@ -17,7 +17,7 @@ import { useAuth } from '../context/AuthContext'
 import { INSUFFICIENT_CREDITS_MESSAGE, PROFESSORI, SUBJECTS } from '../constants'
 
 export default function Dashboard() {
-  const { user, profile } = useAuth()
+  const { user, profile, isAdmin } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [notes, setNotes] = useState([])
@@ -169,6 +169,7 @@ export default function Dashboard() {
               alreadyDownloaded={downloadedIds.has(note.id)}
               credits={profile?.credits ?? 0}
               userId={user.uid}
+              isAdmin={isAdmin}
             />
           ))}
         </ul>
@@ -212,7 +213,7 @@ function NoMatchState({ onReset }) {
   )
 }
 
-function NoteCard({ note, isOwner, alreadyDownloaded, credits, userId }) {
+function NoteCard({ note, isOwner, alreadyDownloaded, credits, userId, isAdmin }) {
   const [busy, setBusy] = useState(false)
 
   async function handleDownload() {
@@ -224,7 +225,7 @@ function NoteCard({ note, isOwner, alreadyDownloaded, credits, userId }) {
       const downloadRef = doc(db, 'users', userId, 'downloads', note.id)
       const alreadyDownloaded = (await getDoc(downloadRef)).exists()
 
-      if (!alreadyDownloaded && credits < 1) {
+      if (!alreadyDownloaded && !isAdmin && credits < 1) {
         downloadWindow?.close()
         window.alert(INSUFFICIENT_CREDITS_MESSAGE)
         return
@@ -240,11 +241,19 @@ function NoteCard({ note, isOwner, alreadyDownloaded, credits, userId }) {
           // Già acquistato tra il controllo e la transazione: niente addebito.
           if (downloadSnapshot.exists()) return
 
-          if (!userSnapshot.exists() || (userSnapshot.data().credits ?? 0) < 1) {
+          if (!userSnapshot.exists()) {
+            throw new Error(INSUFFICIENT_CREDITS_MESSAGE)
+          }
+          if (!isAdmin && (userSnapshot.data().credits ?? 0) < 1) {
             throw new Error(INSUFFICIENT_CREDITS_MESSAGE)
           }
 
-          transaction.update(userRef, { credits: increment(-1), downloadsCount: increment(1) })
+          transaction.update(
+            userRef,
+            isAdmin
+              ? { downloadsCount: increment(1) }
+              : { credits: increment(-1), downloadsCount: increment(1) },
+          )
           transaction.update(noteRef, { downloadsCount: increment(1) })
           transaction.set(downloadRef, {
             noteId: note.id,
@@ -306,7 +315,9 @@ function NoteCard({ note, isOwner, alreadyDownloaded, credits, userId }) {
           ? 'Apertura…'
           : alreadyDownloaded
             ? 'Riscarica gratis'
-            : 'Scarica (1 Credito)'}
+            : isAdmin
+              ? 'Scarica (∞)'
+              : 'Scarica (1 Credito)'}
       </button>
     </li>
   )

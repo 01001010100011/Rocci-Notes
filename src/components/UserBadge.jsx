@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function UserBadge({ compact = false }) {
-  const { profile, logout } = useAuth()
+  const { profile, isAdmin, logout } = useAuth()
   const username = profile?.username || 'Studente'
   const credits = profile?.credits ?? 0
 
@@ -24,7 +24,7 @@ export default function UserBadge({ compact = false }) {
         )}
         <span className="inline-flex items-center gap-1 rounded-full bg-copper/15 px-2 py-0.5 text-xs font-bold text-copper">
           <CoinIcon />
-          {credits}
+          {isAdmin ? '∞' : credits}
         </span>
       </Link>
       <button
