@@ -7,6 +7,7 @@ import UploadPage from './components/UploadPage'
 import ProfilePage from './components/ProfilePage'
 import AdminPage from './components/AdminPage'
 import StatsPage from './components/StatsPage'
+import NotFound from './components/NotFound'
 
 function AdminRoute() {
   const { profile } = useAuth()
@@ -40,7 +41,7 @@ function Gate() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/admin" element={<AdminRoute />} />
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }
