@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>Pagina non trovata · Rocci Notes</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="https://roccinotes.com/favicon.svg"
+    />
+    <style>
+      :root {
+        --ink: #1a1612;
+        --paper: #f3ead8;
+        --copper: #b4532a;
+        --forest: #2d4a3e;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        font-family: 'Sora', ui-sans-serif, system-ui, -apple-system, sans-serif;
+        color: var(--ink);
+        background-color: var(--paper);
+        background-image:
+          linear-gradient(rgba(26, 22, 18, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(26, 22, 18, 0.035) 1px, transparent 1px),
+          radial-gradient(circle at top left, rgba(180, 83, 42, 0.12), transparent 36%),
+          radial-gradient(circle at 90% 10%, rgba(45, 74, 62, 0.1), transparent 32%);
+        background-size: 28px 28px, 28px 28px, 100% 100%, 100% 100%;
+      }
+      .card {
+        max-width: 460px;
+        width: 100%;
+        text-align: center;
+        background: rgba(243, 234, 216, 0.8);
+        border: 1px solid rgba(26, 22, 18, 0.1);
+        border-radius: 24px;
+        padding: 48px 28px;
+        box-shadow: 0 22px 50px -24px rgba(26, 22, 18, 0.45);
+      }
+      .badge {
+        display: inline-block;
+        border: 1.5px solid var(--copper);
+        border-radius: 4px;
+        color: var(--copper);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        padding: 4px 12px;
+      }
+      .code {
+        margin: 24px 0 0;
+        font-family: 'Fraunces', ui-serif, Georgia, serif;
+        font-size: 104px;
+        font-weight: 700;
+        line-height: 1;
+        background: linear-gradient(135deg, var(--copper), var(--forest));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      h1 { font-family: 'Fraunces', Georgia, serif; font-size: 28px; margin: 16px 0 0; }
+      p { color: rgba(26, 22, 18, 0.65); font-size: 15px; line-height: 1.6; margin: 12px 0 0; }
+      a.btn {
+        display: inline-block;
+        margin-top: 28px;
+        background: var(--copper);
+        color: var(--paper);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 12px 24px;
+        border-radius: 9999px;
+        box-shadow: 0 10px 30px -18px rgba(26, 22, 18, 0.35);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <span class="badge">Errore 404</span>
+      <p class="code">404</p>
+      <h1>Ops! Pagina non trovata</h1>
+      <p>
+        Sembra che questa pagina sia andata persa… proprio come gli appunti del
+        giorno prima della verifica! Ti sto riportando alla home…
+      </p>
+      <a class="btn" id="home" href="https://roccinotes.com/">Torna alla Home</a>
+    </div>
+
+    <script>
+      // GitHub Pages serve questo file per i path inesistenti. Con HashRouter la SPA
+      // vive tutta sotto "/#/...": convertiamo il path richiesto in una route hash e
+      // rimandiamo all'app, evitando il 404 grigio di default.
+      (function () {
+        var loc = window.location
+        var path = loc.pathname.replace(/^\/+/, '').replace(/\/+$/, '')
+        var target = loc.origin + '/#/' + path + loc.search
+        document.getElementById('home').href = loc.origin + '/'
+        window.setTimeout(function () {
+          loc.replace(target)
+        }, 400)
+      })()
+    </script>
+  </body>
+</html>
