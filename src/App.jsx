@@ -10,10 +10,9 @@ import StatsPage from './components/StatsPage'
 import NotFound from './components/NotFound'
 import PrivacyPolicy from './components/PrivacyPolicy'
 import Terms from './components/Terms'
-import PromoPage from './components/PromoPage'
 import CookieBanner from './components/CookieBanner'
 
-const PUBLIC_PATHS = ['/privacy', '/terms', '/promo']
+const PUBLIC_PATHS = ['/privacy', '/terms']
 
 function AdminRoute() {
   const { profile } = useAuth()
@@ -27,13 +26,12 @@ function Gate() {
   const { user, loading } = useAuth()
   const location = useLocation()
 
-  // Pagine pubbliche: visibili anche senza accesso (legali + grafiche promo).
+  // Le pagine legali sono pubbliche: visibili anche senza accesso.
   if (PUBLIC_PATHS.includes(location.pathname)) {
     return (
       <Routes>
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<Terms />} />
-        <Route path="/promo" element={<PromoPage />} />
       </Routes>
     )
   }
