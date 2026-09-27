@@ -22,6 +22,8 @@ function isSupportedFile(file) {
   return file.type === 'application/pdf' || file.type.startsWith('image/')
 }
 
+const PROFESSOR_ALTRO = '__altro__'
+
 export default function UploadPage() {
   useDocumentTitle('Carica un appunto')
   const { user, profile } = useAuth()
@@ -29,13 +31,16 @@ export default function UploadPage() {
   const [title, setTitle] = useState('')
   const [subject, setSubject] = useState('')
   const [professor, setProfessor] = useState('')
+  const [customProfessor, setCustomProfessor] = useState('')
   const [description, setDescription] = useState('')
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  const canSubmit =
-    title.trim().length > 0 && Boolean(subject) && Boolean(professor) && Boolean(file)
+  const isAltro = professor === PROFESSOR_ALTRO
+  const professorValue = isAltro ? customProfessor.trim() : professor
+
+  const canSubmit = title.trim().length > 0 && Boolean(subject) && Boolean(file)
 
   function handleFileChange(event) {
     const nextFile = event.target.files?.[0] ?? null
@@ -77,11 +82,7 @@ export default function UploadPage() {
       setError('Scegli una materia dal menu.')
       return
     }
-    if (!professor) {
-      setError('Seleziona il professore dal menu.')
-      return
-    }
-    if (!title.trim() || !subject || !professor || !file) {
+    if (!title.trim() || !subject || !file) {
       setError(REQUIRED_FIELDS_MESSAGE)
       return
     }
@@ -98,7 +99,7 @@ export default function UploadPage() {
       await addDoc(collection(db, 'notes'), {
         title: title.trim(),
         subject,
-        professor,
+        professor: professorValue,
         description: description.trim(),
         fileUrl,
         authorId: user.uid,
@@ -162,26 +163,35 @@ export default function UploadPage() {
           </select>
         </label>
 
-        <label className="mt-4 block">
+        <div className="mt-4 block">
           <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/55">
-            Professore
+            Professore <span className="normal-case text-ink/40">(facoltativo)</span>
           </span>
           <select
-            required
             value={professor}
             onChange={(e) => setProfessor(e.target.value)}
             className="w-full appearance-none rounded-2xl border border-ink/10 bg-white/60 px-4 py-3 outline-none focus:ring-2 focus:ring-copper/40"
           >
-            <option value="" disabled>
-              Seleziona un professore
-            </option>
+            <option value="">Nessuno / non specificato</option>
             {PROFESSORI.map((item) => (
               <option key={item} value={item}>
                 {item}
               </option>
             ))}
+            <option value={PROFESSOR_ALTRO}>Altro…</option>
           </select>
-        </label>
+
+          {isAltro && (
+            <input
+              autoFocus
+              className="mt-3 w-full rounded-2xl border border-ink/10 bg-white/60 px-4 py-3 outline-none focus:ring-2 focus:ring-copper/40"
+              value={customProfessor}
+              onChange={(e) => setCustomProfessor(e.target.value)}
+              placeholder="Nome del professore"
+              maxLength={120}
+            />
+          )}
+        </div>
 
         <label className="mt-4 block">
           <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/55">
