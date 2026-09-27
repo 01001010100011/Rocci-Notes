@@ -5,11 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex" />
     <title>Pagina non trovata · Rocci Notes</title>
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href="https://roccinotes.com/favicon.svg"
-    />
+    <link rel="icon" type="image/svg+xml" href="https://roccinotes.com/favicon.svg" />
+    <script>
+      // GitHub Pages serve questo file per i path inesistenti. Con HashRouter la SPA
+      // vive sotto "/#/...": convertiamo subito il path in una route hash e rimandiamo
+      // all'app PRIMA che il body venga disegnato, così non si vede alcun lampo.
+      ;(function () {
+        var loc = window.location
+        var path = loc.pathname.replace(/^\/+/, '').replace(/\/+$/, '')
+        loc.replace(loc.origin + '/#/' + path + loc.search)
+      })()
+    </script>
     <style>
       :root {
         --ink: #1a1612;
@@ -84,30 +90,19 @@
     </style>
   </head>
   <body>
-    <div class="card">
-      <span class="badge">Errore 404</span>
-      <p class="code">404</p>
-      <h1>Ops! Pagina non trovata</h1>
-      <p>
-        Sembra che questa pagina sia andata persa… proprio come gli appunti del
-        giorno prima della verifica! Ti sto riportando alla home…
-      </p>
-      <a class="btn" id="home" href="https://roccinotes.com/">Torna alla Home</a>
-    </div>
-
-    <script>
-      // GitHub Pages serve questo file per i path inesistenti. Con HashRouter la SPA
-      // vive tutta sotto "/#/...": convertiamo il path richiesto in una route hash e
-      // rimandiamo all'app, evitando il 404 grigio di default.
-      (function () {
-        var loc = window.location
-        var path = loc.pathname.replace(/^\/+/, '').replace(/\/+$/, '')
-        var target = loc.origin + '/#/' + path + loc.search
-        document.getElementById('home').href = loc.origin + '/'
-        window.setTimeout(function () {
-          loc.replace(target)
-        }, 400)
-      })()
-    </script>
+    <!-- Visibile solo con JavaScript disattivato: normalmente il redirect in <head>
+         porta subito alla 404 della SPA, senza mostrare questa card. -->
+    <noscript>
+      <div class="card">
+        <span class="badge">Errore 404</span>
+        <p class="code">404</p>
+        <h1>Ops! Pagina non trovata</h1>
+        <p>
+          Sembra che questa pagina sia andata persa… proprio come gli appunti del
+          giorno prima della verifica!
+        </p>
+        <a class="btn" href="https://roccinotes.com/">Torna alla Home</a>
+      </div>
+    </noscript>
   </body>
 </html>
