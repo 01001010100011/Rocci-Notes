@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-const SITE = 'Rocci Notes'
+const SITE = '📝 Rocci Notes'
 
 export default function useDocumentTitle(title) {
   useEffect(() => {

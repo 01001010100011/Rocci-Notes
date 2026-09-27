@@ -90,7 +90,8 @@ export default function AuthScreen() {
           <p className="stamp mb-4 inline-block rotate-[-2deg] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-forest">
             Scuola · Scambio appunti
           </p>
-          <h1 className="font-display text-5xl leading-[0.95] text-ink sm:text-6xl lg:text-7xl">
+          <h1 className="flex items-center gap-3 font-display text-5xl leading-[0.95] text-ink sm:text-6xl lg:text-7xl">
+            <span aria-hidden="true">📝</span>
             Rocci Notes
           </h1>
           <p className="mt-5 max-w-md text-base leading-relaxed text-ink/75 sm:text-lg">

@@ -42,7 +42,14 @@ export default function AppShell() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-copper">
             Bacheca appunti
           </p>
-          <h1 className="font-display text-4xl text-ink sm:text-5xl">Rocci Notes</h1>
+          <span className="mt-0.5 flex items-center gap-2">
+            <span className="text-3xl leading-none sm:text-4xl" aria-hidden="true">
+              📝
+            </span>
+            <h1 className="font-display text-4xl leading-none text-ink sm:text-5xl">
+              Rocci Notes
+            </h1>
+          </span>
         </Link>
         <div className="hidden items-center gap-3 sm:flex">
           {isAdmin && (

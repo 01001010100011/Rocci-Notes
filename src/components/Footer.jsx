@@ -3,7 +3,10 @@ export default function Footer() {
     <footer className="mx-auto mt-14 max-w-6xl border-t border-ink/10 pt-8">
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div className="lg:col-span-2">
-          <p className="font-display text-2xl text-ink">Rocci Notes</p>
+          <p className="flex items-center gap-2 font-display text-2xl text-ink">
+            <span aria-hidden="true">📝</span>
+            Rocci Notes
+          </p>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-ink/65">
             La bacheca dove gli studenti si scambiano appunti con i crediti: carichi i tuoi
             quaderni, sblocchi quelli dei compagni. Tre crediti di benvenuto per iniziare.

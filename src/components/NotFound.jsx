@@ -10,7 +10,12 @@ export default function NotFound() {
       <div className="pointer-events-none absolute -right-16 bottom-10 h-64 w-64 rounded-full bg-forest/20 blur-3xl" />
 
       <div className="relative w-full max-w-lg rounded-3xl border border-ink/10 bg-paper/80 px-6 py-12 text-center shadow-lift backdrop-blur-sm sm:px-10">
-        <p className="stamp mx-auto inline-block px-3 py-1 text-[11px] font-semibold uppercase text-copper">
+        <p className="flex items-center justify-center gap-2 font-display text-xl text-ink">
+          <span aria-hidden="true">📝</span>
+          Rocci Notes
+        </p>
+
+        <p className="stamp mx-auto mt-5 inline-block px-3 py-1 text-[11px] font-semibold uppercase text-copper">
           Errore 404
         </p>
 
