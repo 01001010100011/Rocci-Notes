@@ -36,7 +36,7 @@ export default function AppShell() {
   const onStats = pathname === '/stats'
 
   return (
-    <div className="min-h-dvh px-4 pb-28 pt-4 sm:px-6 sm:pb-10 sm:pt-6 lg:px-10">
+    <div className="flex min-h-dvh flex-col px-4 pb-28 pt-4 sm:px-6 sm:pb-10 sm:pt-6 lg:px-10">
       <header className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <Link to="/" className="block">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-copper">
@@ -95,7 +95,9 @@ export default function AppShell() {
           <UserBadge compact />
         </div>
       </header>
-      <Outlet />
+      <div className="flex-1">
+        <Outlet />
+      </div>
       <Footer />
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-paper/95 backdrop-blur sm:hidden">
