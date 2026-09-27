@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://01001010100011.github.io/rocci-notes/",
+  "homepage": "https://roccinotes.com",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
