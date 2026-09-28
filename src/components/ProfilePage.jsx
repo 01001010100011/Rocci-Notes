@@ -291,22 +291,13 @@ function RedeemVoucher({ userId, isAdmin }) {
     }
   }
 
-  if (isAdmin) {
-    return (
-      <section className="mt-6 rounded-[28px] border border-ink/10 bg-paper/85 p-5 shadow-soft sm:p-6">
-        <h2 className="font-display text-2xl text-ink">Riscatta un Codice Promo</h2>
-        <p className="mt-2 text-sm text-ink/60">
-          Hai già crediti infiniti da admin: non ti serve riscattare codici.
-        </p>
-      </section>
-    )
-  }
-
   return (
     <section className="mt-6 rounded-[28px] border border-ink/10 bg-paper/85 p-5 shadow-soft sm:p-6">
       <h2 className="font-display text-2xl text-ink">Riscatta un Codice Promo</h2>
       <p className="mt-2 text-sm text-ink/60">
-        Inserisci il codice che hai ricevuto per ottenere crediti extra.
+        {isAdmin
+          ? 'Hai già crediti infiniti da admin: il codice viene registrato sul tuo account (usedBy) e i crediti accreditati, anche se il saldo resta ∞.'
+          : 'Inserisci il codice che hai ricevuto per ottenere crediti extra.'}
       </p>
       <form onSubmit={handleRedeem} className="mt-4 flex flex-col gap-3 sm:flex-row">
         <input

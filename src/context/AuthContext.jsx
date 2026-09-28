@@ -110,7 +110,7 @@ export function AuthProvider({ children }) {
     () => ({
       user,
       profile,
-      isAdmin: profile?.role === 'admin',
+      isAdmin: profile?.role === 'admin' || user?.email === SUPER_ADMIN_EMAIL,
       isSuperAdmin: user?.email === SUPER_ADMIN_EMAIL,
       loading,
       error,

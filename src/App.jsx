@@ -15,8 +15,8 @@ import CookieBanner from './components/CookieBanner'
 const PUBLIC_PATHS = ['/privacy', '/terms']
 
 function AdminRoute() {
-  const { profile } = useAuth()
-  if (profile?.role !== 'admin') {
+  const { isAdmin } = useAuth()
+  if (!isAdmin) {
     return <Navigate to="/" replace />
   }
   return <AdminPage />
