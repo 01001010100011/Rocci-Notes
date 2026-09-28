@@ -8,6 +8,33 @@ export const ADMIN_EMAILS = [
   'fmillesimi@gmail.com',
 ]
 
+// Gerarchia ruoli: superadmin (solo email) > admin > helper > user.
+// I documenti storici usano 'student' per l'utente standard: normalizeRole lo
+// riporta a 'user' senza migrazioni sul database.
+export const ROLE_SUPERADMIN = 'superadmin'
+export const ROLE_ADMIN = 'admin'
+export const ROLE_HELPER = 'helper'
+export const ROLE_USER = 'user'
+
+export const ROLE_LABELS = {
+  [ROLE_USER]: 'User',
+  [ROLE_HELPER]: 'Helper',
+  [ROLE_ADMIN]: 'Admin',
+  [ROLE_SUPERADMIN]: 'Super Admin',
+}
+
+export function normalizeRole(raw) {
+  if (raw === ROLE_ADMIN) return ROLE_ADMIN
+  if (raw === ROLE_HELPER) return ROLE_HELPER
+  if (raw === ROLE_SUPERADMIN) return ROLE_SUPERADMIN
+  return ROLE_USER
+}
+
+export const ACCOUNT_SUSPENDED_TITLE = 'Account Sospeso'
+
+export const ACCOUNT_SUSPENDED_MESSAGE =
+  'Il tuo account è stato temporaneamente o definitivamente disabilitato per violazione delle linee guida della piattaforma. Se ritieni si tratti di un errore, contatta roccinotes@gmail.com'
+
 export const VOUCHER_INVALID_MESSAGE = 'Codice non valido'
 
 export const VOUCHER_ALREADY_USED_MESSAGE = 'Hai già riscattato questo codice in passato'

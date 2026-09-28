@@ -3,9 +3,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isAdmin() {
-      return request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    function userData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Utente sospeso dal super-admin: gli sono negate tutte le scritture
+    // (caricamento, download, riscatto voucher, modifica del profilo).
+    function isBlocked() {
+      return request.auth != null && userData().get('isBlocked', false) == true;
     }
 
     function isAdminEmail() {
@@ -21,6 +26,14 @@ service cloud.firestore {
     function isSuperAdminEmail() {
       return request.auth != null
         && request.auth.token.email == 'leoriellooo@gmail.com';
+    }
+
+    // Approvazione/rifiuto appunti e accredito all'autore: admin, helper e
+    // super-admin. Il super-admin è riconosciuto anche via email perché il suo
+    // ruolo effettivo non dipende dal campo role memorizzato.
+    function isModerator() {
+      return request.auth != null
+        && (userData().get('role', 'user') in ['admin', 'helper'] || isSuperAdminEmail());
     }
 
     // Codici già riscattati dall'utente: default [] per i documenti precedenti.
@@ -60,7 +73,7 @@ service cloud.firestore {
         && request.resource.data.uploadsCount == 0
         && request.resource.data.downloadsCount == 0
         && request.resource.data.email == request.auth.token.email
-        && request.resource.data.role == (isAdminEmail() ? 'admin' : 'student')
+        && request.resource.data.role == (isAdminEmail() ? 'admin' : 'user')
         && request.resource.data.keys().hasAll([
           'uid', 'email', 'username', 'credits', 'role',
           'uploadsCount', 'downloadsCount', 'createdAt'
@@ -74,6 +87,7 @@ service cloud.firestore {
           // uploadsCount può solo essere inizializzato a 0 (backfill), mai incrementato da sé.
           (
             request.auth.uid == userId
+            && !isBlocked()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'credits', 'username', 'email', 'downloadsCount', 'uploadsCount'
             ])
@@ -92,12 +106,15 @@ service cloud.firestore {
           || (
             request.auth.uid == userId
             && isAdminEmail()
+            && !isBlocked()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
             && request.resource.data.role == 'admin'
           )
-          // Admin che accredita +1 credito e +1 uploadsCount all'autore approvato.
+          // Moderatore (admin/helper/super-admin) che accredita +1 credito e
+          // +1 uploadsCount all'autore approvato.
           || (
-            isAdmin()
+            isModerator()
+            && !isBlocked()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['credits', 'uploadsCount'])
             && request.resource.data.credits == resource.data.credits + 1
             && afterUploads() == beforeUploads() + 1
@@ -107,6 +124,7 @@ service cloud.firestore {
           // in /vouchers e non essere già presente in redeemedCodes dell'utente.
           || (
             request.auth.uid == userId
+            && !isBlocked()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'credits', 'redeemedCodes', 'lastRedeemedCode'
             ])
@@ -118,6 +136,16 @@ service cloud.firestore {
             && request.resource.data.credits == resource.data.credits
               + get(/databases/$(database)/documents/vouchers/$(request.resource.data.lastRedeemedCode)).data.credits
           )
+          // Solo il super-admin assegna/cambia ruolo e stato di blocco di
+          // qualsiasi utente. Nessun altro può toccare questi due campi.
+          || (
+            isSuperAdminEmail()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'isBlocked'])
+            && request.resource.data.get('role', 'user') in [
+              'user', 'helper', 'admin', 'student', 'superadmin'
+            ]
+            && request.resource.data.get('isBlocked', false) is bool
+          )
         );
 
       allow delete: if false;
@@ -128,6 +156,7 @@ service cloud.firestore {
 
         allow create: if request.auth != null
           && request.auth.uid == userId
+          && !isBlocked()
           && request.resource.data.noteId == downloadId
           && request.resource.data.keys().hasAll(['noteId', 'title', 'subject', 'fileUrl', 'downloadedAt']);
 
@@ -141,6 +170,7 @@ service cloud.firestore {
 
       // Le note nascono sempre in stato 'pending'.
       allow create: if request.auth != null
+        && !isBlocked()
         && request.resource.data.authorId == request.auth.uid
         && request.resource.data.status == 'pending'
         && request.resource.data.downloadsCount == 0
@@ -169,10 +199,11 @@ service cloud.firestore {
             resource.data.authorId == request.auth.uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authorName'])
           )
-          // Approvazione/rifiuto riservati all'admin (il rifiuto porta con sé
-          // la motivazione obbligatoria e la scadenza a 7 giorni).
+          // Approvazione/rifiuto riservati ai moderatori (admin/helper/super-admin);
+          // il rifiuto porta con sé la motivazione obbligatoria e la scadenza a 7 giorni.
           || (
-            isAdmin()
+            isModerator()
+            && !isBlocked()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'rejectionReason', 'rejectedAt', 'expireAt'])
             && (
               request.resource.data.status == 'approved'
@@ -184,9 +215,10 @@ service cloud.firestore {
       allow delete: if request.auth != null
         && (
           resource.data.authorId == request.auth.uid
-          // Pulizia dei rifiutati scaduti: solo admin, solo dopo la scadenza.
+          // Pulizia dei rifiutati scaduti: solo moderatori, solo dopo la scadenza.
           || (
-            isAdmin()
+            isModerator()
+            && !isBlocked()
             && resource.data.status == 'rejected'
             && resource.data.expireAt != null
             && resource.data.expireAt < request.time
@@ -217,7 +249,8 @@ service cloud.firestore {
         && (
           // Riscatto da parte di un utente.
           (
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount', 'usedBy'])
+            !isBlocked()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount', 'usedBy'])
             && resource.data.usedCount < resource.data.maxUses
             && !(request.auth.uid in resource.data.usedBy)
             && request.resource.data.usedCount == resource.data.usedCount + 1

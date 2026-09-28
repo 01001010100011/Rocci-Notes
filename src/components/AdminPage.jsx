@@ -15,6 +15,7 @@ import { db } from '../firebase'
 import { REJECTION_TTL_BANNER, REJECTION_TTL_DAYS } from '../constants'
 import { useAuth } from '../context/AuthContext'
 import VoucherPanel from './VoucherPanel'
+import UserManagement from './UserManagement'
 import useDocumentTitle from '../useDocumentTitle'
 
 const STATUS_LABEL = {
@@ -155,7 +156,7 @@ export default function AdminPage() {
         {[
           ['queue', `Da approvare (${pending.length})`],
           ['history', `Storico (${history.length})`],
-          ...(isSuperAdmin ? [['voucher', 'Gestione Voucher']] : []),
+          ...(isSuperAdmin ? [['voucher', 'Gestione Voucher'], ['users', 'Gestione Utenti']] : []),
         ].map(([key, label]) => (
           <button
             key={key}
@@ -188,6 +189,8 @@ export default function AdminPage() {
         ))}
 
       {tab === 'voucher' && isSuperAdmin && <VoucherPanel />}
+
+      {tab === 'users' && isSuperAdmin && <UserManagement />}
 
       {notice && (
         <p className="fixed right-4 top-4 z-50 rounded-2xl bg-forest px-5 py-3 text-sm font-semibold text-paper shadow-lift">

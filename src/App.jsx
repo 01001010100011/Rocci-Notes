@@ -8,6 +8,7 @@ import ProfilePage from './components/ProfilePage'
 import AdminPage from './components/AdminPage'
 import StatsPage from './components/StatsPage'
 import NotFound from './components/NotFound'
+import BlockedScreen from './components/BlockedScreen'
 import PrivacyPolicy from './components/PrivacyPolicy'
 import Terms from './components/Terms'
 import CookieBanner from './components/CookieBanner'
@@ -15,15 +16,15 @@ import CookieBanner from './components/CookieBanner'
 const PUBLIC_PATHS = ['/privacy', '/terms']
 
 function AdminRoute() {
-  const { isAdmin } = useAuth()
-  if (!isAdmin) {
+  const { canModerate } = useAuth()
+  if (!canModerate) {
     return <Navigate to="/" replace />
   }
   return <AdminPage />
 }
 
 function Gate() {
-  const { user, loading } = useAuth()
+  const { user, loading, isBlocked } = useAuth()
   const location = useLocation()
 
   // Le pagine legali sono pubbliche: visibili anche senza accesso.
@@ -46,6 +47,11 @@ function Gate() {
 
   if (!user) {
     return <AuthScreen />
+  }
+
+  // Account bloccato: nessuna rotta raggiungibile, solo la schermata di sospensione.
+  if (isBlocked) {
+    return <BlockedScreen />
   }
 
   return (

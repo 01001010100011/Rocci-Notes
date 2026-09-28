@@ -10,7 +10,7 @@ import {
 } from 'firebase/auth'
 import { doc, onSnapshot, runTransaction, serverTimestamp } from 'firebase/firestore'
 import { auth, db, googleProvider } from '../firebase'
-import { ADMIN_EMAILS, SUPER_ADMIN_EMAIL } from '../constants'
+import { ADMIN_EMAILS, ROLE_ADMIN, ROLE_HELPER, ROLE_USER, SUPER_ADMIN_EMAIL, normalizeRole } from '../constants'
 
 const AuthContext = createContext(null)
 
@@ -26,7 +26,7 @@ export async function ensureUserDocument(user, extras = {}) {
   await runTransaction(db, async (transaction) => {
     const snapshot = await transaction.get(userRef)
     const username = extras.username || usernameFromUser(user)
-    const role = ADMIN_EMAILS.includes(user.email) ? 'admin' : 'student'
+    const role = ADMIN_EMAILS.includes(user.email) ? ROLE_ADMIN : ROLE_USER
 
     if (!snapshot.exists()) {
       transaction.set(userRef, {
@@ -43,6 +43,10 @@ export async function ensureUserDocument(user, extras = {}) {
     }
 
     const data = snapshot.data()
+    // Utente bloccato: nessuna scrittura di manutenzione, così il login non
+    // inciampa in update negati dalle regole e resta visibile la schermata di blocco.
+    if (data.isBlocked === true) return
+
     const patch = {}
     if (extras.username && data.username !== extras.username) {
       patch.username = extras.username
@@ -106,12 +110,19 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  const role = user?.email === SUPER_ADMIN_EMAIL ? 'superadmin' : normalizeRole(profile?.role)
+
   const value = useMemo(
     () => ({
       user,
       profile,
-      isAdmin: profile?.role === 'admin' || user?.email === SUPER_ADMIN_EMAIL,
-      isSuperAdmin: user?.email === SUPER_ADMIN_EMAIL,
+      role,
+      // Crediti infiniti e bypass spesa: solo admin e super admin.
+      isAdmin: role === ROLE_ADMIN || role === 'superadmin',
+      // Pannello approvazione appunti: admin, super admin e helper.
+      canModerate: role === ROLE_ADMIN || role === 'superadmin' || role === ROLE_HELPER,
+      isSuperAdmin: role === 'superadmin',
+      isBlocked: profile?.isBlocked === true,
       loading,
       error,
       setError,
@@ -137,7 +148,7 @@ export function AuthProvider({ children }) {
       },
       logout: () => signOut(auth),
     }),
-    [user, profile, loading, error],
+    [user, profile, role, loading, error],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
